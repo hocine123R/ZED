@@ -679,46 +679,68 @@ audio.addEventListener('timeupdate', () => {
     currentTimeDisplay.textContent = formatTime(audio.currentTime);
 });
 
-// Gestion du menu burger
+// Gestion du menu burger améliorée
 const menuToggle = document.querySelector('.menu-toggle');
 const sidebar = document.querySelector('.sidebar');
 const mobileOverlay = document.querySelector('.mobile-overlay');
+const mainContent = document.querySelector('.main-content');
 
-menuToggle.addEventListener('click', () => {
+function toggleMenu() {
     menuToggle.classList.toggle('active');
     sidebar.classList.toggle('active');
     mobileOverlay.classList.toggle('active');
     document.body.style.overflow = sidebar.classList.contains('active') ? 'hidden' : '';
+}
+
+menuToggle.addEventListener('click', (e) => {
+    e.stopPropagation();
+    toggleMenu();
 });
 
 mobileOverlay.addEventListener('click', () => {
-    menuToggle.classList.remove('active');
-    sidebar.classList.remove('active');
-    mobileOverlay.classList.remove('active');
-    document.body.style.overflow = '';
+    toggleMenu();
 });
 
 // Fermer le menu lors du clic sur un lien
 document.querySelectorAll('.sidebar a').forEach(link => {
     link.addEventListener('click', () => {
         if (window.innerWidth <= 768) {
-            menuToggle.classList.remove('active');
-            sidebar.classList.remove('active');
-            mobileOverlay.classList.remove('active');
-            document.body.style.overflow = '';
+            toggleMenu();
         }
     });
 });
 
 // Gestion du redimensionnement de la fenêtre
+let resizeTimer;
 window.addEventListener('resize', () => {
-    if (window.innerWidth > 768) {
-        menuToggle.classList.remove('active');
-        sidebar.classList.remove('active');
-        mobileOverlay.classList.remove('active');
-        document.body.style.overflow = '';
-    }
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+        if (window.innerWidth > 768) {
+            menuToggle.classList.remove('active');
+            sidebar.classList.remove('active');
+            mobileOverlay.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+    }, 250);
 });
+
+// Amélioration de la responsivité du lecteur
+function updatePlayerLayout() {
+    const player = document.querySelector('.player');
+    const playerControls = document.querySelector('.player-controls');
+    
+    if (window.innerWidth <= 768) {
+        playerControls.style.flexDirection = 'column';
+        playerControls.style.gap = '10px';
+    } else {
+        playerControls.style.flexDirection = 'row';
+        playerControls.style.gap = '20px';
+    }
+}
+
+// Appeler la fonction au chargement et lors du redimensionnement
+window.addEventListener('load', updatePlayerLayout);
+window.addEventListener('resize', updatePlayerLayout);
 
 // Initialisation
 displayAlbums();

@@ -19,9 +19,20 @@ body {
 
 /* Sidebar Styles */
 .sidebar {
-    background-color: #000000;
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 250px;
+    height: 100vh;
+    background: #000;
     padding: 20px;
-    grid-row: 1 / 2;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+    z-index: 999;
+}
+
+.sidebar.active {
+    transform: translateX(0);
 }
 
 .logo h1 {
@@ -490,44 +501,36 @@ nav ul li a i {
 /* Responsive Design */
 @media (max-width: 1200px) {
     .container {
-        padding: 0 20px;
+        padding: 0 15px;
     }
     
     .song-card {
-        width: calc(50% - 30px);
+        width: calc(50% - 20px);
+    }
+    
+    .album-cover-large {
+        width: 250px;
+        height: 250px;
     }
 }
 
 @media (max-width: 768px) {
     .menu-toggle {
-        display: flex;
-    }
-
-    .sidebar {
-        position: fixed;
-        left: -250px;
-        top: 0;
-        height: 100vh;
-        width: 250px;
-        transition: left 0.3s ease;
-        z-index: 5;
-    }
-
-    .sidebar.active {
-        left: 0;
+        display: block;
     }
 
     .main-content {
         margin-left: 0;
-        width: 100%;
+        padding: 20px;
     }
 
     .album-header {
         flex-direction: column;
         text-align: center;
+        padding: 20px;
     }
 
-    .album-cover {
+    .album-cover-large {
         width: 200px;
         height: 200px;
         margin: 0 auto 20px;
@@ -535,6 +538,7 @@ nav ul li a i {
 
     .album-info {
         margin-left: 0;
+        text-align: center;
     }
 
     .song-card {
@@ -546,20 +550,52 @@ nav ul li a i {
         height: 250px;
     }
 
-    .playlist-card {
+    .player {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        padding: 10px;
+    }
+
+    .player-controls {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .song-info {
+        width: 100%;
+        text-align: center;
+    }
+
+    .controls {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .progress-bar {
         width: 100%;
     }
 
     .alert-modal {
         width: 90%;
-        max-width: 90%;
         left: 5%;
         right: 5%;
     }
 }
 
 @media (max-width: 480px) {
-    .album-cover {
+    .menu-toggle {
+        top: 15px;
+        left: 15px;
+    }
+
+    .sidebar {
+        width: 100%;
+        padding-top: 60px;
+    }
+
+    .album-cover-large {
         width: 150px;
         height: 150px;
     }
@@ -590,21 +626,16 @@ nav ul li a i {
         font-size: 14px;
     }
 
-    .playlist-card {
-        padding: 10px;
+    .player {
+        padding: 5px;
     }
 
-    .playlist-cover {
-        width: 60px;
-        height: 60px;
+    .player-controls {
+        gap: 5px;
     }
 
-    .playlist-info h3 {
-        font-size: 16px;
-    }
-
-    .playlist-info p {
-        font-size: 12px;
+    .progress-bar input[type="range"] {
+        height: 3px;
     }
 }
 
@@ -617,7 +648,7 @@ nav ul li a i {
     width: 100%;
     height: 100%;
     background: rgba(0, 0, 0, 0.5);
-    z-index: 4;
+    z-index: 998;
 }
 
 .mobile-overlay.active {
@@ -1163,30 +1194,30 @@ nav ul li a i {
     background: #535353;
 }
 
-/* Menu Burger */
+/* Menu Burger Styles */
 .menu-toggle {
     display: none;
-    flex-direction: column;
-    justify-content: space-between;
-    width: 30px;
-    height: 21px;
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    z-index: 1000;
     background: transparent;
     border: none;
     cursor: pointer;
-    padding: 0;
-    z-index: 10;
+    padding: 10px;
 }
 
 .menu-toggle span {
-    width: 100%;
+    display: block;
+    width: 25px;
     height: 3px;
     background-color: #fff;
-    border-radius: 3px;
+    margin: 5px 0;
     transition: all 0.3s ease;
 }
 
 .menu-toggle.active span:nth-child(1) {
-    transform: translateY(9px) rotate(45deg);
+    transform: translateY(8px) rotate(45deg);
 }
 
 .menu-toggle.active span:nth-child(2) {
@@ -1194,5 +1225,5 @@ nav ul li a i {
 }
 
 .menu-toggle.active span:nth-child(3) {
-    transform: translateY(-9px) rotate(-45deg);
+    transform: translateY(-8px) rotate(-45deg);
 } 
