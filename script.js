@@ -679,6 +679,47 @@ audio.addEventListener('timeupdate', () => {
     currentTimeDisplay.textContent = formatTime(audio.currentTime);
 });
 
+// Gestion du menu burger
+const menuToggle = document.querySelector('.menu-toggle');
+const sidebar = document.querySelector('.sidebar');
+const mobileOverlay = document.querySelector('.mobile-overlay');
+
+menuToggle.addEventListener('click', () => {
+    menuToggle.classList.toggle('active');
+    sidebar.classList.toggle('active');
+    mobileOverlay.classList.toggle('active');
+    document.body.style.overflow = sidebar.classList.contains('active') ? 'hidden' : '';
+});
+
+mobileOverlay.addEventListener('click', () => {
+    menuToggle.classList.remove('active');
+    sidebar.classList.remove('active');
+    mobileOverlay.classList.remove('active');
+    document.body.style.overflow = '';
+});
+
+// Fermer le menu lors du clic sur un lien
+document.querySelectorAll('.sidebar a').forEach(link => {
+    link.addEventListener('click', () => {
+        if (window.innerWidth <= 768) {
+            menuToggle.classList.remove('active');
+            sidebar.classList.remove('active');
+            mobileOverlay.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+    });
+});
+
+// Gestion du redimensionnement de la fenêtre
+window.addEventListener('resize', () => {
+    if (window.innerWidth > 768) {
+        menuToggle.classList.remove('active');
+        sidebar.classList.remove('active');
+        mobileOverlay.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+});
+
 // Initialisation
 displayAlbums();
 displaySongs();
