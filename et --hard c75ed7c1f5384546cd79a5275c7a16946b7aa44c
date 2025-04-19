@@ -1,0 +1,29 @@
+[33mcommit a3e01a529cf23603f9f171ff313df2ff5f6e0fb8[m[33m ([m[1;36mHEAD -> [m[1;32mmaster[m[33m, [m[1;31morigin/master[m[33m)[m
+Author: hocine123R <cineh5400@gmail.com>
+Date:   Sat Apr 19 01:01:50 2025 +0200
+
+    Amélioration de la responsivité et du menu burger pour mobile
+
+[33mcommit c75ed7c1f5384546cd79a5275c7a16946b7aa44c[m
+Author: hocine123R <cineh5400@gmail.com>
+Date:   Sat Apr 19 00:57:08 2025 +0200
+
+    Amélioration de la responsivité : ajout du menu burger et optimisation pour mobile
+
+[33mcommit 488bdfcc71e65640b8c87be972cd5f4f327fbf5a[m
+Author: hocine123R <cineh5400@gmail.com>
+Date:   Sat Apr 19 00:41:12 2025 +0200
+
+    Initial commit: Ajout des fonctionnalités de playlist et amélioration de l'interface utilisateur
+
+[33mcommit 43ed96ae1d3c9f1a83ea1d24b31a8d2cc06294db[m
+Author: hocine123R <cineh5400@gmail.com>
+Date:   Sat Apr 19 00:35:59 2025 +0200
+
+    Déplacement des fichiers vers le dossier docs pour GitHub Pages
+
+[33mcommit 787cf6ca7d48ddc5037995d9e68788269acb76c4[m
+Author: hocine123R <cineh5400@gmail.com>
+Date:   Sat Apr 19 00:21:37 2025 +0200
+
+    Initial commit: Ajout du site Zed Music avec toutes les fonctionnalités

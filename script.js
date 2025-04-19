@@ -223,6 +223,11 @@ const playlistForm = document.querySelector('.playlist-form');
 const playlistList = document.querySelector('.playlist-list');
 const closePlaylistModal = document.querySelector('.close-playlist-modal');
 const closeAddToPlaylistModal = document.querySelector('.close-add-to-playlist-modal');
+const menuToggle = document.querySelector('.menu-toggle');
+const mobileOverlay = document.querySelector('.mobile-overlay');
+const sidebar = document.querySelector('.sidebar');
+const mainContent = document.querySelector('.main-content');
+const player = document.querySelector('.player');
 
 // Variables globales
 let currentAlbum = albums[0];
@@ -238,35 +243,19 @@ function savePlaylists() {
 
 // Fonction pour afficher une alerte personnalisée
 function showAlert(title, message, type = 'info') {
-    const alertModal = document.getElementById('alert-modal');
-    const alertTitle = document.getElementById('alert-title');
-    const alertMessage = document.getElementById('alert-message');
-    const alertContent = document.querySelector('.alert-content');
-
     alertTitle.textContent = title;
     alertMessage.textContent = message;
     
     // Style selon le type d'alerte
-    alertContent.className = 'alert-content';
-    switch(type) {
-        case 'success':
-            alertContent.classList.add('alert-success');
-            break;
-        case 'error':
-            alertContent.classList.add('alert-error');
-            break;
-        case 'warning':
-            alertContent.classList.add('alert-warning');
-            break;
-        default:
-            alertContent.classList.add('alert-info');
-    }
-
-    alertModal.style.display = 'flex';
+    alertModal.className = 'alert-modal';
+    alertModal.classList.add(`alert-${type}`);
     
-    // Fermeture automatique après 3 secondes
+    // Afficher l'alerte
+    alertModal.classList.add('active');
+    
+    // Fermer automatiquement après 3 secondes
     setTimeout(() => {
-        alertModal.style.display = 'none';
+        alertModal.classList.remove('active');
     }, 3000);
 }
 
@@ -277,14 +266,18 @@ function displayAlbums() {
         const albumCard = document.createElement('div');
         albumCard.className = 'album-card';
         albumCard.innerHTML = `
-            <img src="${album.cover}" alt="${album.title}">
-            <h3>${album.title}</h3>
-            <p>${album.artist}</p>
+            <div class="album-cover">
+                <img src="${album.cover}" alt="${album.title}">
+            </div>
+            <div class="album-info">
+                <h3>${album.title}</h3>
+                <p>${album.artist}</p>
+            </div>
         `;
         albumCard.addEventListener('click', () => {
             currentAlbum = album;
-            displaySongs();
             showSection('home');
+            displaySongs();
         });
         albumsGrid.appendChild(albumCard);
     });
@@ -299,119 +292,207 @@ function displaySongs() {
         songCard.innerHTML = `
             <div class="song-cover">
                 <img src="${song.cover}" alt="${song.title}">
-                <div class="song-overlay">
-                    <button class="play-song" data-index="${index}">
-                        <i class="fas fa-play"></i>
-                    </button>
-                    <button class="show-lyrics" data-index="${index}">
-                        <i class="fas fa-microphone"></i>
-                    </button>
-                </div>
+                ${song.isComingSoon ? `
+                    <div class="coming-soon">
+                        <i class="fas fa-clock"></i>
+                        <span>Disponible le ${song.releaseDate}</span>
+                    </div>
+                ` : ''}
             </div>
             <div class="song-info">
                 <h3 class="song-title">${song.title}</h3>
                 <p class="song-artist">Par ${song.artist}</p>
-                ${song.isComingSoon ? `
-                    <div class="coming-soon-badge">
-                        <i class="fas fa-clock"></i>
-                        <span>Sortie le ${song.releaseDate}</span>
-                    </div>
-                ` : ''}
             </div>
             <div class="song-actions">
-                <button class="add-to-playlist" data-index="${index}" title="Ajouter à une playlist">
+                ${song.audio ? `
+                    <button class="action-btn play-btn" title="Lire">
+                        <i class="fas fa-play"></i>
+                    </button>
+                ` : ''}
+                <button class="action-btn lyrics-btn" title="Paroles">
+                    <i class="fas fa-music"></i>
+                </button>
+                <button class="action-btn add-to-playlist-btn" title="Ajouter à une playlist">
                     <i class="fas fa-plus"></i>
                 </button>
-                ${!song.isComingSoon ? `
-                    <button class="download-song" data-index="${index}" title="Télécharger">
+                ${song.audio ? `
+                    <button class="action-btn download-btn" title="Télécharger">
                         <i class="fas fa-download"></i>
                     </button>
                 ` : ''}
             </div>
         `;
+        
+        // Gestionnaires d'événements
+        const playBtn = songCard.querySelector('.play-btn');
+        const lyricsBtn = songCard.querySelector('.lyrics-btn');
+        const addToPlaylistBtn = songCard.querySelector('.add-to-playlist-btn');
+        const downloadBtn = songCard.querySelector('.download-btn');
+        
+        if (playBtn) {
+            playBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                playSong(song);
+            });
+        }
+        
+        lyricsBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            showLyrics(song);
+        });
+        
+        addToPlaylistBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            addToPlaylist(song);
+        });
+        
+        if (downloadBtn) {
+            downloadBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                downloadSong(song);
+            });
+        }
+        
+        songCard.addEventListener('click', () => {
+            if (song.audio) {
+                playSong(song);
+            } else {
+                showAlert('Information', `Cette chanson sera disponible le ${song.releaseDate}`, 'info');
+            }
+        });
+        
         songsGrid.appendChild(songCard);
     });
 }
 
 // Fonction pour afficher les playlists
 function displayPlaylists() {
-    const playlistsContainer = document.querySelector('.playlists-grid');
-    if (!playlistsContainer) return;
-
-    playlistsContainer.innerHTML = `
-        <div class="playlist-card create-playlist-card" onclick="createPlaylist()">
-            <div class="playlist-cover">
-                <i class="fas fa-plus"></i>
+    playlistsGrid.innerHTML = '';
+    
+    if (playlists.length === 0) {
+        playlistsGrid.innerHTML = `
+            <div class="no-playlists">
+                <p>Vous n'avez pas encore de playlists</p>
+                <button class="create-playlist-btn" onclick="createPlaylist()">
+                    <i class="fas fa-plus"></i> Créer une playlist
+                </button>
             </div>
-            <div class="playlist-info">
-                <h3>Créer une playlist</h3>
-                <p>Cliquez pour créer une nouvelle playlist</p>
-            </div>
-        </div>
-    `;
-
+        `;
+        return;
+    }
+    
     playlists.forEach(playlist => {
         const playlistCard = document.createElement('div');
         playlistCard.className = 'playlist-card';
         playlistCard.innerHTML = `
             <div class="playlist-cover">
-                <i class="fas fa-music"></i>
+                <img src="${playlist.songs.length > 0 ? playlist.songs[0].cover : 'default-playlist.png'}" alt="${playlist.name}">
             </div>
             <div class="playlist-info">
                 <h3>${playlist.name}</h3>
                 <p>${playlist.songs.length} chanson${playlist.songs.length > 1 ? 's' : ''}</p>
-                <p class="playlist-date">Créée le ${new Date(playlist.created).toLocaleDateString()}</p>
             </div>
             <div class="playlist-actions">
-                <button onclick="viewPlaylist('${playlist.name}')">
-                    <i class="fas fa-eye"></i>
+                <button class="view-playlist" title="Voir la playlist">
+                    <i class="fas fa-play"></i>
                 </button>
-                <button onclick="deletePlaylist('${playlist.name}')">
+                <button class="edit-playlist" title="Modifier la playlist">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button class="delete-playlist" title="Supprimer la playlist">
                     <i class="fas fa-trash"></i>
                 </button>
             </div>
         `;
-        playlistsContainer.appendChild(playlistCard);
+        
+        const viewBtn = playlistCard.querySelector('.view-playlist');
+        const editBtn = playlistCard.querySelector('.edit-playlist');
+        const deleteBtn = playlistCard.querySelector('.delete-playlist');
+        
+        viewBtn.addEventListener('click', () => {
+            viewPlaylist(playlist.name);
+        });
+        
+        editBtn.addEventListener('click', () => {
+            editPlaylist(playlist.name);
+        });
+        
+        deleteBtn.addEventListener('click', () => {
+            deletePlaylist(playlist.name);
+        });
+        
+        playlistsGrid.appendChild(playlistCard);
     });
 }
 
 // Fonction pour afficher une section
 function showSection(sectionName) {
+    // Cacher toutes les sections
     document.querySelectorAll('.main-content > div').forEach(section => {
-        section.style.display = 'none';
+        section.classList.remove('active');
     });
-    document.querySelector(`.${sectionName}-section`).style.display = 'block';
+    
+    // Afficher la section demandée
+    const targetSection = document.querySelector(`.${sectionName}-section`);
+    if (targetSection) {
+        targetSection.classList.add('active');
+    }
+    
+    // Mettre à jour le menu actif
+    document.querySelectorAll('nav ul li a').forEach(link => {
+        link.classList.remove('active');
+        if (link.dataset.section === sectionName) {
+            link.classList.add('active');
+        }
+    });
+    
+    // Mettre à jour le contenu
+    switch (sectionName) {
+        case 'home':
+            displaySongs();
+            break;
+        case 'albums':
+            displayAlbums();
+            break;
+        case 'playlists':
+            displayPlaylists();
+            break;
+        case 'search':
+            document.querySelector('.search-section').classList.add('active');
+            break;
+    }
+    
+    // Fermer le menu mobile si ouvert
+    if (window.innerWidth <= 1024) {
+        menuToggle.classList.remove('active');
+        mobileOverlay.classList.remove('active');
+        sidebar.classList.remove('active');
+    }
 }
 
 // Fonction pour jouer une chanson
 function playSong(song) {
-    if (song.isComingSoon) {
-        showAlert('Information', `Cette chanson sera disponible le ${song.releaseDate}`);
+    if (!song.audio) {
+        showAlert('Information', 'Cette chanson sera disponible le ' + song.releaseDate, 'info');
         return;
     }
-
-    try {
-        audio.src = song.audio;
-        audio.play()
-            .then(() => {
-                isPlaying = true;
-                playButton.innerHTML = '<i class="fas fa-pause"></i>';
-                currentSongDisplay.textContent = song.title;
-                currentArtistDisplay.textContent = song.artist;
-                currentSongCover.src = song.cover;
-                
-                audio.addEventListener('loadedmetadata', () => {
-                    durationDisplay.textContent = formatTime(audio.duration);
-                });
-            })
-            .catch(error => {
-                console.error('Erreur de lecture audio:', error);
-                showAlert('Erreur', 'Erreur lors de la lecture du fichier audio. Vérifiez que le fichier existe et est accessible.');
-            });
-    } catch (error) {
-        console.error('Erreur lors de la lecture:', error);
-        showAlert('Erreur', 'Erreur lors de la lecture du fichier audio.');
-    }
+    
+    audio.src = song.audio;
+    audio.play()
+        .then(() => {
+            isPlaying = true;
+            playButton.innerHTML = '<i class="fas fa-pause"></i>';
+            currentSongDisplay.textContent = song.title;
+            currentArtistDisplay.textContent = song.artist;
+            currentSongCover.src = song.cover;
+            
+            // Mettre à jour l'index de la chanson actuelle
+            currentSongIndex = currentAlbum.songs.findIndex(s => s.title === song.title);
+        })
+        .catch(error => {
+            showAlert('Erreur', 'Impossible de lire la chanson', 'error');
+            console.error('Erreur de lecture:', error);
+        });
 }
 
 // Fonction pour mettre en pause/reprendre
@@ -425,26 +506,25 @@ function togglePlay() {
                 playButton.innerHTML = '<i class="fas fa-pause"></i>';
             })
             .catch(error => {
+                showAlert('Erreur', 'Impossible de lire la chanson', 'error');
                 console.error('Erreur de lecture:', error);
             });
     }
     isPlaying = !isPlaying;
 }
 
-// Fonction pour la chanson suivante
+// Fonction pour passer à la chanson suivante
 function nextSong() {
-    if (currentSongIndex < currentAlbum.songs.length - 1) {
-        currentSongIndex++;
-        playSong(currentAlbum.songs[currentSongIndex]);
-    }
+    currentSongIndex = (currentSongIndex + 1) % currentAlbum.songs.length;
+    const nextSong = currentAlbum.songs[currentSongIndex];
+    playSong(nextSong);
 }
 
-// Fonction pour la chanson précédente
+// Fonction pour revenir à la chanson précédente
 function prevSong() {
-    if (currentSongIndex > 0) {
-        currentSongIndex--;
-        playSong(currentAlbum.songs[currentSongIndex]);
-    }
+    currentSongIndex = (currentSongIndex - 1 + currentAlbum.songs.length) % currentAlbum.songs.length;
+    const prevSong = currentAlbum.songs[currentSongIndex];
+    playSong(prevSong);
 }
 
 // Fonction pour formater le temps
@@ -456,293 +536,314 @@ function formatTime(seconds) {
 
 // Fonction pour afficher les paroles
 function showLyrics(song) {
-    lyricsText.innerHTML = song.lyrics.split('\n\n').map(section => {
-        const lines = section.split('\n');
-        const title = lines[0].endsWith(':') ? `<h3>${lines[0]}</h3>` : '';
-        const content = lines.slice(title ? 1 : 0).map(line => `<p>${line}</p>`).join('');
-        return `<div class="lyrics-section">${title}${content}</div>`;
-    }).join('');
-    lyricsModal.style.display = 'block';
+    lyricsText.innerHTML = song.lyrics.split('\n').map(line => `<p>${line}</p>`).join('');
+    lyricsModal.classList.add('active');
 }
 
 // Fonction pour créer une playlist
 function createPlaylist() {
-    const playlistName = prompt('Entrez le nom de votre playlist :');
-    if (playlistName && playlistName.trim() !== '') {
-        if (playlists.some(p => p.name.toLowerCase() === playlistName.trim().toLowerCase())) {
-            showAlert('Erreur', 'Une playlist avec ce nom existe déjà !', 'error');
-            return;
-        }
+    createPlaylistModal.classList.add('active');
+}
+
+// Fonction pour éditer une playlist
+function editPlaylist(playlistName) {
+    const playlist = playlists.find(p => p.name === playlistName);
+    if (!playlist) return;
+    
+    createPlaylistModal.classList.add('active');
+    const input = playlistForm.querySelector('input');
+    input.value = playlistName;
+}
+
+// Fonction pour supprimer une playlist
+function deletePlaylist(playlistName) {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer cette playlist ?')) return;
+    
+    playlists = playlists.filter(p => p.name !== playlistName);
+    savePlaylists();
+    displayPlaylists();
+    showAlert('Succès', 'Playlist supprimée', 'success');
+}
+
+// Fonction pour afficher une playlist
+function viewPlaylist(playlistName) {
+    const playlist = playlists.find(p => p.name === playlistName);
+    if (!playlist) return;
+    
+    songsGrid.innerHTML = '';
+    playlist.songs.forEach(song => {
+        const songCard = document.createElement('div');
+        songCard.className = 'song-card';
+        songCard.innerHTML = `
+            <div class="song-cover">
+                <img src="${song.cover}" alt="${song.title}">
+            </div>
+            <div class="song-info">
+                <h3 class="song-title">${song.title}</h3>
+                <p class="song-artist">Par ${song.artist}</p>
+            </div>
+            <div class="song-actions">
+                <button class="play-btn" title="Lire">
+                    <i class="fas fa-play"></i>
+                </button>
+                <button class="lyrics-btn" title="Paroles">
+                    <i class="fas fa-music"></i>
+                </button>
+                <button class="remove-from-playlist-btn" title="Retirer de la playlist">
+                    <i class="fas fa-minus"></i>
+                </button>
+            </div>
+        `;
         
-        const newPlaylist = {
-            name: playlistName.trim(),
-            songs: [],
-            created: new Date().toISOString()
-        };
-        playlists.push(newPlaylist);
-        savePlaylists();
-        displayPlaylists();
-        showAlert('Succès', `Playlist "${playlistName}" créée avec succès !`, 'success');
-    }
+        const playBtn = songCard.querySelector('.play-btn');
+        const lyricsBtn = songCard.querySelector('.lyrics-btn');
+        const removeBtn = songCard.querySelector('.remove-from-playlist-btn');
+        
+        playBtn.addEventListener('click', () => {
+            playSong(song);
+        });
+        
+        lyricsBtn.addEventListener('click', () => {
+            showLyrics(song);
+        });
+        
+        removeBtn.addEventListener('click', () => {
+            playlist.songs = playlist.songs.filter(s => s.title !== song.title);
+            savePlaylists();
+            viewPlaylist(playlistName);
+            showAlert('Succès', 'Chanson retirée de la playlist', 'success');
+        });
+        
+        songsGrid.appendChild(songCard);
+    });
 }
 
 // Fonction pour ajouter une chanson à une playlist
-function addToPlaylist(song, playlistName) {
-    const playlist = playlists.find(p => p.name === playlistName);
-    if (playlist) {
-        if (!playlist.songs.some(s => s.title === song.title)) {
-            playlist.songs.push(song);
-            savePlaylists();
-            showAlert('Succès', `"${song.title}" ajoutée à "${playlistName}"`, 'success');
-        } else {
-            showAlert('Information', 'Cette chanson est déjà dans la playlist.', 'warning');
-        }
-    }
+function addToPlaylist(song) {
+    selectedSongForPlaylist = song;
+    addToPlaylistModal.classList.add('active');
+    displayPlaylistList();
 }
 
-// Fonction pour afficher la liste des playlists dans la modale
+// Fonction pour afficher la liste des playlists
 function displayPlaylistList() {
-    playlistList.innerHTML = playlists.map(playlist => `
-        <div class="playlist-item">
-            <div class="playlist-item-info">
-                <h3>${playlist.name}</h3>
-                <p>${playlist.songs.length} chanson${playlist.songs.length > 1 ? 's' : ''}</p>
+    playlistList.innerHTML = '';
+    
+    if (playlists.length === 0) {
+        playlistList.innerHTML = `
+            <div class="no-playlists">
+                <p>Vous n'avez pas encore de playlists</p>
+                <button onclick="createPlaylist()">
+                    <i class="fas fa-plus"></i> Créer une playlist
+                </button>
             </div>
-            <button class="add-to-playlist-btn" data-playlist="${playlist.name}">
+        `;
+        return;
+    }
+    
+    playlists.forEach(playlist => {
+        const playlistItem = document.createElement('div');
+        playlistItem.className = 'playlist-item';
+        playlistItem.innerHTML = `
+            <span>${playlist.name}</span>
+            <button class="add-to-playlist" data-name="${playlist.name}">
                 <i class="fas fa-plus"></i>
             </button>
-        </div>
-    `).join('');
+        `;
+        
+        const addBtn = playlistItem.querySelector('.add-to-playlist');
+        addBtn.addEventListener('click', () => {
+            const playlist = playlists.find(p => p.name === addBtn.dataset.name);
+            if (!playlist) return;
+            
+            if (playlist.songs.some(s => s.title === selectedSongForPlaylist.title)) {
+                showAlert('Information', 'Cette chanson est déjà dans la playlist', 'info');
+                return;
+            }
+            
+            playlist.songs.push(selectedSongForPlaylist);
+            savePlaylists();
+            addToPlaylistModal.classList.remove('active');
+            showAlert('Succès', 'Chanson ajoutée à la playlist', 'success');
+        });
+        
+        playlistList.appendChild(playlistItem);
+    });
 }
 
-// Fonction pour télécharger la chanson
+// Fonction pour télécharger une chanson
 function downloadSong(song) {
-    if (song.isComingSoon) {
-        showAlert('Information', `Cette chanson sera disponible le ${song.releaseDate}`);
-        return;
-    }
-
     if (!song.audio) {
-        showAlert('Erreur', 'Le fichier audio n\'est pas disponible', 'error');
+        showAlert('Information', 'Cette chanson sera disponible le ' + song.releaseDate, 'info');
         return;
     }
-
-    try {
-        const link = document.createElement('a');
-        link.href = song.audio;
-        link.download = `${song.title} - ${song.artist}.mp3`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        showAlert('Succès', `Téléchargement de "${song.title}" démarré`, 'success');
-    } catch (error) {
-        console.error('Erreur lors du téléchargement:', error);
-        showAlert('Erreur', 'Erreur lors du téléchargement de la chanson', 'error');
-    }
+    
+    const link = document.createElement('a');
+    link.href = song.audio;
+    link.download = `${song.title} - ${song.artist}.mp3`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showAlert('Succès', 'Téléchargement commencé', 'success');
 }
 
 // Fonction pour rechercher
 function search(query) {
+    if (!query) {
+        searchResults.innerHTML = '';
+        return;
+    }
+    
     const results = [];
     albums.forEach(album => {
         album.songs.forEach(song => {
             if (song.title.toLowerCase().includes(query.toLowerCase()) ||
                 song.artist.toLowerCase().includes(query.toLowerCase())) {
-                results.push({ album, song });
+                results.push({
+                    ...song,
+                    albumTitle: album.title
+                });
             }
         });
     });
-
-    searchResults.innerHTML = results.map(result => `
-        <div class="search-result">
-            <img src="${result.song.cover}" alt="${result.song.title}">
-            <div class="search-info">
-                <h3>${result.song.title}</h3>
-                <p>${result.song.artist}</p>
-                <p class="album-name">${result.album.title}</p>
+    
+    searchResults.innerHTML = '';
+    results.forEach(result => {
+        const resultItem = document.createElement('div');
+        resultItem.className = 'search-result-item';
+        resultItem.innerHTML = `
+            <img src="${result.cover}" alt="${result.title}">
+            <div class="search-result-info">
+                <h3>${result.title}</h3>
+                <p>${result.artist} • ${result.albumTitle}</p>
             </div>
-        </div>
-    `).join('');
-}
-
-// Fonction pour afficher le contenu d'une playlist
-function viewPlaylist(playlistName) {
-    const playlist = playlists.find(p => p.name === playlistName);
-    if (playlist) {
-        currentAlbum = {
-            title: playlistName,
-            artist: 'Playlist',
-            cover: 'playlist-cover.png',
-            songs: playlist.songs
-        };
-        displaySongs();
-        showSection('home');
-        showAlert('Information', `Affichage de la playlist "${playlistName}"`, 'info');
-    }
-}
-
-// Fonction pour supprimer une playlist
-function deletePlaylist(playlistName) {
-    if (confirm(`Êtes-vous sûr de vouloir supprimer la playlist "${playlistName}" ?`)) {
-        playlists = playlists.filter(p => p.name !== playlistName);
-        savePlaylists();
-        displayPlaylists();
-        showAlert('Succès', `Playlist "${playlistName}" supprimée`, 'success');
-    }
-}
-
-// Gestion des événements
-playButton.addEventListener('click', togglePlay);
-nextButton.addEventListener('click', nextSong);
-prevButton.addEventListener('click', prevSong);
-closeLyricsBtn.addEventListener('click', () => {
-    lyricsModal.style.display = 'none';
-});
-closeAlertBtn.addEventListener('click', () => {
-    alertModal.style.display = 'none';
-});
-alertOkBtn.addEventListener('click', () => {
-    alertModal.style.display = 'none';
-});
-closePlaylistModal.addEventListener('click', () => {
-    createPlaylistModal.style.display = 'none';
-});
-closeAddToPlaylistModal.addEventListener('click', () => {
-    addToPlaylistModal.style.display = 'none';
-});
-
-// Gestion du formulaire de création de playlist
-playlistForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const name = playlistForm.querySelector('input').value;
-    if (name) {
-        playlists.push({
-            name: name,
-            songs: []
-        });
-        displayPlaylists();
-        createPlaylistModal.style.display = 'none';
-        playlistForm.reset();
-        showAlert('Succès', 'Playlist créée avec succès!');
-    }
-});
-
-// Gestion des événements pour les cartes de chansons
-document.addEventListener('click', (e) => {
-    const target = e.target.closest('button');
-    if (!target) return;
-
-    const songIndex = target.dataset.index;
-    if (songIndex === undefined) return;
-
-    const song = currentAlbum.songs[songIndex];
-
-    if (target.classList.contains('play-song')) {
-        playSong(song);
-    } else if (target.classList.contains('show-lyrics')) {
-        showLyrics(song);
-    } else if (target.classList.contains('add-to-playlist')) {
-        if (playlists.length === 0) {
-            createPlaylist();
-        } else {
-            const playlistName = prompt('Choisissez une playlist :\n' + 
-                playlists.map(p => p.name).join('\n'));
-            if (playlistName) {
-                addToPlaylist(song, playlistName);
+            <button class="play-search-result" data-title="${result.title}">
+                <i class="fas fa-play"></i>
+            </button>
+        `;
+        
+        const playBtn = resultItem.querySelector('.play-search-result');
+        playBtn.addEventListener('click', () => {
+            const song = currentAlbum.songs.find(s => s.title === result.title);
+            if (song) {
+                playSong(song);
             }
-        }
-    } else if (target.classList.contains('download-song')) {
-        downloadSong(song);
-    }
-});
-
-// Gestion des événements pour la navigation
-document.querySelectorAll('nav a').forEach(link => {
-    link.addEventListener('click', (e) => {
-        e.preventDefault();
-        const section = link.dataset.section;
-        showSection(section);
-        document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
-        link.classList.add('active');
+        });
+        
+        searchResults.appendChild(resultItem);
     });
-});
+}
 
-// Gestion de la recherche
-searchInput.addEventListener('input', (e) => {
-    search(e.target.value);
-});
-
-// Mise à jour de la barre de progression
-audio.addEventListener('timeupdate', () => {
-    const progress = (audio.currentTime / audio.duration) * 100;
-    progressBar.value = progress;
-    currentTimeDisplay.textContent = formatTime(audio.currentTime);
-});
-
-// Gestion du menu burger améliorée
-const menuToggle = document.querySelector('.menu-toggle');
-const sidebar = document.querySelector('.sidebar');
-const mobileOverlay = document.querySelector('.mobile-overlay');
-const mainContent = document.querySelector('.main-content');
-
+// Fonction pour basculer le menu mobile
 function toggleMenu() {
     menuToggle.classList.toggle('active');
-    sidebar.classList.toggle('active');
     mobileOverlay.classList.toggle('active');
-    document.body.style.overflow = sidebar.classList.contains('active') ? 'hidden' : '';
+    sidebar.classList.toggle('active');
 }
 
-menuToggle.addEventListener('click', (e) => {
-    e.stopPropagation();
-    toggleMenu();
-});
-
-mobileOverlay.addEventListener('click', () => {
-    toggleMenu();
-});
-
-// Fermer le menu lors du clic sur un lien
-document.querySelectorAll('.sidebar a').forEach(link => {
-    link.addEventListener('click', () => {
-        if (window.innerWidth <= 768) {
-            toggleMenu();
-        }
-    });
-});
-
-// Gestion du redimensionnement de la fenêtre
-let resizeTimer;
-window.addEventListener('resize', () => {
-    clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(() => {
-        if (window.innerWidth > 768) {
-            menuToggle.classList.remove('active');
-            sidebar.classList.remove('active');
-            mobileOverlay.classList.remove('active');
-            document.body.style.overflow = '';
-        }
-    }, 250);
-});
-
-// Amélioration de la responsivité du lecteur
+// Fonction pour mettre à jour la mise en page du lecteur
 function updatePlayerLayout() {
-    const player = document.querySelector('.player');
-    const playerControls = document.querySelector('.player-controls');
-    
-    if (window.innerWidth <= 768) {
-        playerControls.style.flexDirection = 'column';
-        playerControls.style.gap = '10px';
+    const width = window.innerWidth;
+    if (width <= 768) {
+        player.style.left = '0';
+        mainContent.style.marginLeft = '0';
     } else {
-        playerControls.style.flexDirection = 'row';
-        playerControls.style.gap = '20px';
+        player.style.left = '250px';
+        mainContent.style.marginLeft = '250px';
     }
 }
 
-// Appeler la fonction au chargement et lors du redimensionnement
-window.addEventListener('load', updatePlayerLayout);
-window.addEventListener('resize', updatePlayerLayout);
-
-// Initialisation
-displayAlbums();
-displaySongs();
-displayPlaylists(); 
+// Événements
+document.addEventListener('DOMContentLoaded', () => {
+    // Initialisation
+    displaySongs();
+    updatePlayerLayout();
+    
+    // Navigation
+    document.querySelectorAll('.nav-link').forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+            link.classList.add('active');
+            showSection(link.dataset.section);
+        });
+    });
+    
+    // Menu mobile
+    menuToggle.addEventListener('click', toggleMenu);
+    mobileOverlay.addEventListener('click', toggleMenu);
+    
+    // Lecteur audio
+    playButton.addEventListener('click', togglePlay);
+    prevButton.addEventListener('click', prevSong);
+    nextButton.addEventListener('click', nextSong);
+    
+    audio.addEventListener('timeupdate', () => {
+        const progress = (audio.currentTime / audio.duration) * 100;
+        progressBar.value = progress;
+        currentTimeDisplay.textContent = formatTime(audio.currentTime);
+    });
+    
+    audio.addEventListener('loadedmetadata', () => {
+        durationDisplay.textContent = formatTime(audio.duration);
+    });
+    
+    audio.addEventListener('ended', () => {
+        nextSong();
+    });
+    
+    progressBar.addEventListener('input', () => {
+        const time = (progressBar.value / 100) * audio.duration;
+        audio.currentTime = time;
+    });
+    
+    // Volume
+    const volumeSlider = document.getElementById('volume');
+    if (volumeSlider) {
+        volumeSlider.addEventListener('input', () => {
+            audio.volume = volumeSlider.value / 100;
+        });
+    }
+    
+    // Modales
+    document.querySelectorAll('.close-modal').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.modal, .playlist-modal').forEach(modal => {
+                modal.classList.remove('active');
+            });
+        });
+    });
+    
+    // Formulaire de playlist
+    playlistForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const input = playlistForm.querySelector('input');
+        const playlistName = input.value.trim();
+        
+        if (!playlistName) {
+            showAlert('Erreur', 'Veuillez entrer un nom pour la playlist', 'error');
+            return;
+        }
+        
+        const existingPlaylist = playlists.find(p => p.name === playlistName);
+        if (existingPlaylist) {
+            // Mise à jour de la playlist existante
+            existingPlaylist.name = playlistName;
+        } else {
+            // Création d'une nouvelle playlist
+            playlists.push({
+                name: playlistName,
+                songs: []
+            });
+        }
+        
+        savePlaylists();
+        displayPlaylists();
+        createPlaylistModal.classList.remove('active');
+        showAlert('Succès', existingPlaylist ? 'Playlist mise à jour' : 'Playlist créée avec succès', 'success');
+        input.value = '';
+    });
+    
+    // Redimensionnement
+    window.addEventListener('resize', updatePlayerLayout);
+}); 
