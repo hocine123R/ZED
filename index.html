@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zed Music - Votre musique, votre style</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <button class="menu-toggle">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+        
+        <div class="mobile-overlay"></div>
+        
+        <aside class="sidebar">
+            <div class="logo">
+                <h1>Zed Music</h1>
+            </div>
+            <nav>
+                <ul>
+                    <li><a href="#" class="active" data-section="home"><i class="fas fa-home"></i> Accueil</a></li>
+                    <li><a href="#" data-section="albums"><i class="fas fa-compact-disc"></i> Albums</a></li>
+                    <li><a href="#" data-section="playlists"><i class="fas fa-list"></i> Playlists</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Search Section -->
+            <div class="search-section" style="display: none;">
+                <div class="search-bar">
+                    <input type="text" placeholder="Rechercher une musique, un album, un artiste...">
+                    <button><i class="fas fa-search"></i></button>
+                </div>
+                <div class="search-results"></div>
+            </div>
+
+            <!-- Albums Section -->
+            <div class="albums-section" style="display: none;">
+                <h2>Albums</h2>
+                <div class="albums-grid">
+                    <!-- Les albums seront ajoutés dynamiquement -->
+                </div>
+            </div>
+
+            <!-- Home Section -->
+            <div class="home-section">
+                <!-- Album Header -->
+                <div class="album-header">
+                    <div class="album-cover-large">
+                        <img src="Promenade sous le coucher du soleil.png" alt="Album Cover">
+                    </div>
+                    <div class="album-info">
+                        <h1>Album 2025 : Inspiration</h1>
+                        <p class="artist">Lamamri Hocine</p>
+                        <div class="album-actions">
+                            <button class="play-all"><i class="fas fa-play"></i> Lire tout</button>
+                            <button class="shuffle"><i class="fas fa-random"></i> Aléatoire</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Songs Grid -->
+                <div class="songs-grid">
+                    <!-- Les chansons seront ajoutées dynamiquement -->
+                </div>
+            </div>
+
+            <!-- Playlists Section -->
+            <div class="playlists-section" style="display: none;">
+                <div class="playlists-header">
+                    <h2>Vos Playlists</h2>
+                    <button class="create-playlist"><i class="fas fa-plus"></i> Créer une playlist</button>
+                </div>
+                <div class="playlists-grid">
+                    <!-- Les playlists seront ajoutées dynamiquement -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Lyrics Modal -->
+        <div class="lyrics-modal" id="lyrics-modal">
+            <div class="lyrics-content">
+                <div class="lyrics-header">
+                    <h2>Paroles</h2>
+                    <button class="close-lyrics"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="lyrics-text" id="lyrics-text">
+                    <!-- Les paroles seront insérées dynamiquement -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Player -->
+        <div class="player">
+            <div class="player-controls">
+                <div class="song-info">
+                    <img src="Portrait de Contrastes Émotionnels (1).png" alt="Song Cover" id="current-song-cover">
+                    <div class="song-details">
+                        <h3 id="current-song">Bête eh oui</h3>
+                        <p id="current-artist">Lamamri Hocine</p>
+                    </div>
+                </div>
+                <div class="controls">
+                    <button id="prev"><i class="fas fa-step-backward"></i></button>
+                    <button id="play"><i class="fas fa-play"></i></button>
+                    <button id="next"><i class="fas fa-step-forward"></i></button>
+                </div>
+                <div class="progress-bar">
+                    <span id="current-time">0:00</span>
+                    <input type="range" id="progress" min="0" max="100" value="0">
+                    <span id="duration">0:00</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Alert Modal -->
+    <div class="alert-modal" id="alert-modal">
+        <div class="alert-content">
+            <div class="alert-header">
+                <h3 id="alert-title">Information</h3>
+                <button class="close-alert"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="alert-body">
+                <p id="alert-message"></p>
+            </div>
+            <div class="alert-footer">
+                <button class="alert-ok">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Playlist Modal -->
+    <div class="playlist-modal" id="create-playlist-modal">
+        <div class="playlist-modal-content">
+            <div class="playlist-modal-header">
+                <h2>Créer une playlist</h2>
+                <button class="close-playlist-modal"><i class="fas fa-times"></i></button>
+            </div>
+            <form class="playlist-form">
+                <input type="text" placeholder="Nom de la playlist" required>
+                <button type="submit">Créer</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add to Playlist Modal -->
+    <div class="add-to-playlist-modal" id="add-to-playlist-modal">
+        <div class="add-to-playlist-content">
+            <div class="playlist-modal-header">
+                <h2>Ajouter à une playlist</h2>
+                <button class="close-add-to-playlist-modal"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="playlist-list">
+                <!-- Les playlists seront ajoutées dynamiquement -->
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html> 
